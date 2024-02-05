@@ -29,7 +29,7 @@ public:
 
     T* operator[](int row){ return &(data.get()+offset)[row * stride]; }
     int size() { return sz; }
-    std::vector<Matrix<T>> get_submatrices(); // returns a std::vector of 4 submatrices that contain reference to original data 
+    std::vector<Matrix<T>> get_submatrices(); // returns a std::vector of 4 submatrices that contain std::reference to original data 
     bool operator==(Matrix<T> &rhs);
     bool operator!=(Matrix<T> &rhs) { return !((*this) == rhs); }
     template<typename U>
@@ -98,15 +98,15 @@ void multithreaded_matrix_multiply(Matrix<T> &A, Matrix<T> &B, Matrix<T> &C)
     auto B_subs = B.get_submatrices(); 
     auto C_subs = C.get_submatrices(); 
     auto D_subs = D.get_submatrices(); 
-    std::vector<thread> threads; 
+    std::vector<std::thread> threads; 
     if (A_subs[0].size() >= 256)
     {
         for (int i = 0; i < 4; i++)
         {
             int A_idx = i / 2 * 2; 
             int B_idx = i % 2; 
-            threads.push_back(thread(multithreaded_matrix_multiply<T>, ref(A_subs[A_idx]), ref(B_subs[B_idx]), ref(C_subs[i])));
-            threads.push_back(thread(multithreaded_matrix_multiply<T>, ref(A_subs[A_idx+1]), ref(B_subs[B_idx+2]), ref(D_subs[i])));
+            threads.push_back(std::thread(multithreaded_matrix_multiply<T>, std::ref(A_subs[A_idx]), std::ref(B_subs[B_idx]), std::ref(C_subs[i])));
+            threads.push_back(std::thread(multithreaded_matrix_multiply<T>, std::ref(A_subs[A_idx+1]), std::ref(B_subs[B_idx+2]), std::ref(D_subs[i])));
         }
     }
     else 
@@ -115,15 +115,15 @@ void multithreaded_matrix_multiply(Matrix<T> &A, Matrix<T> &B, Matrix<T> &C)
         {
             int A_idx = i / 2 * 2; 
             int B_idx = i % 2; 
-            threads.push_back(thread(matrix_multiply<T>, ref(A_subs[A_idx]), ref(B_subs[B_idx]), ref(C_subs[i])));
-            threads.push_back(thread(matrix_multiply<T>, ref(A_subs[A_idx+1]), ref(B_subs[B_idx+2]), ref(D_subs[i])));
+            threads.push_back(std::thread(matrix_multiply<T>, std::ref(A_subs[A_idx]), std::ref(B_subs[B_idx]), std::ref(C_subs[i])));
+            threads.push_back(std::thread(matrix_multiply<T>, std::ref(A_subs[A_idx+1]), std::ref(B_subs[B_idx+2]), std::ref(D_subs[i])));
         }
     }
     for (auto &t : threads)
         t.join(); 
     threads.clear(); 
     for (int i = 0; i < 4; i++)
-        threads.push_back(thread(matrix_addition<T>, ref(C_subs[i]), ref(D_subs[i]), ref(C_subs[i])));
+        threads.push_back(std::thread(matrix_addition<T>, std::ref(C_subs[i]), std::ref(D_subs[i]), std::ref(C_subs[i])));
     for (auto &t : threads)
         t.join(); 
 }
